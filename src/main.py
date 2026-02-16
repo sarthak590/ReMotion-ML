@@ -1,33 +1,31 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from src.tremor_analysis import tremor_score
+from src.session_tracker import SessionTracker
+import numpy as np
 
 
-def simulate_tremor(duration=10, sampling_rate=30, tremor_freq=5):
-    t = np.linspace(0, duration, duration * sampling_rate)
-    tremor = 2 * np.sin(2 * np.pi * tremor_freq * t)
+def simulate_tremor(freq):
+    t = np.linspace(0, 10, 300)
+    tremor = 2 * np.sin(2 * np.pi * freq * t)
     noise = np.random.normal(0, 0.3, len(t))
-    signal = tremor + noise
-    return t, signal
+    return tremor + noise
 
 
-def simulate_healthy(duration=10, sampling_rate=30):
-    t = np.linspace(0, duration, duration * sampling_rate)
-    signal = np.random.normal(0, 0.2, len(t))
-    return t, signal
+tracker = SessionTracker(baseline_sessions=3)
 
+# Simulate 3 baseline sessions
+for _ in range(3):
+    baseline_freq = np.random.uniform(2.8, 3.2)  # small natural variation
+    signal = simulate_tremor(freq=baseline_freq)
+    metrics = tremor_score(signal, 30)
+    tracker.add_session(metrics)
 
-SAMPLING_RATE = 30
+print("Baseline built.\n")
 
-t1, healthy = simulate_healthy()
-t2, tremor = simulate_tremor()
+# New session (simulate deterioration)
+new_signal = simulate_tremor(freq=5)
+new_metrics = tremor_score(new_signal, 30)
 
-healthy_result = tremor_score(healthy, SAMPLING_RATE)
-tremor_result = tremor_score(tremor, SAMPLING_RATE)
+result = tracker.evaluate_session(new_metrics)
 
-print("Healthy Result:", healthy_result)
-print("Tremor Result:", tremor_result)
-
-plt.plot(t2, tremor)
-plt.title("Tremor Signal")
-plt.show()
+print("New Session Evaluation:")
+print(result)
